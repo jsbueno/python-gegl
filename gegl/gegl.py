@@ -1,3 +1,6 @@
+# coding: utf-8
+# Author: João S. O. Bueno
+
 import sys
 from gi.repository import Gegl as _gegl
 
@@ -10,7 +13,7 @@ class OpNode(object):
 
     You can access OpNode._node attribute for raw access
     to the GEGL node as exposed by pygobject
-
+7
     """
     def __init__(self, operation, **kw):
         object.__setattr__(self, "_node",  _gegl.Node())
