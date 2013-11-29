@@ -6,7 +6,9 @@ from gi.repository import Gegl as _gegl
 
 _gegl.init(sys.argv[1:])
 
-
+def list_operations(filter=""):
+    ops = _gegl.list_operations()
+    return [op for op in ops if filter in op]
 
 class OpNode(object):
     """ Wrapper for a GEGL node with an operation
@@ -104,3 +106,12 @@ class Graph(object):
         self._children[-1]._node.process()
 
     process = __call__
+
+# Transparently make available all remaining GEGL calls:
+
+for key in dir(_gegl):
+    if key.startswith("_"): continue
+    if key in ("LookupFunction", "NodeFunction", "TileCallback"): continue
+    if key not in globals():
+        globals()[key] = getattr(_gegl, key)
+
