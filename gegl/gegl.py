@@ -20,6 +20,8 @@ class OpNode(object):
     def __init__(self, operation, **kw):
         object.__setattr__(self, "_node",  _gegl.Node())
         self.operation = operation
+        for key, value in kw.iteritems():
+            setattr(self, key, value)
 
     @classmethod
     def _from_raw_node(cls, _node):
@@ -57,6 +59,11 @@ class Graph(object):
 
     You can access OpNode._node attribute for raw access
     to the GEGL node as exposed by pygobject
+
+    When instantiated, a list of operators
+    can be passed: these nodes will be instantiated
+    and "append"ed into the graph
+
     """
 
     def __init__(self,  *args, **kw):
@@ -72,6 +79,26 @@ class Graph(object):
             self.append(op)
 
     def append(self, op):
+        """Creates a new OpNode instance and appends it to the graph
+
+        if self.auto is True, the new node is automatically connected
+        with the preceeding node.
+
+        Each operator may be a string with the operator name:
+        if the operator prefix is "gegl:" it can be omitted.
+        It can also be a gegl.OpNode instance or a raw
+        gobject _gegl.Node instance
+
+        And each such operator can be packed as a 2-tuple
+        where the second element is a mapping (or 2-tuple sequence)
+        with the properties for this operator.
+
+        """
+        if isinstance(op, tuple):
+            op, params = op
+            params = dict(params)
+        else:
+            params = {}
         if isinstance(op, OpNode):
             node = op
         elif isinstance(op, _gegl.Node):
@@ -79,13 +106,13 @@ class Graph(object):
         else:
             if not ":" in op:
                 op = "gegl:" + op
-            node = OpNode(op)
+            node = OpNode(op, **params)
         self._node.add_child(node._node)
         if self.auto and self._children:
             node.connect_from(self._children[-1])
         # Not shure if Gegl's Node.get_children is
-        # ordered by inversed insertion order.
-        # anyway, just the "inversed" part makes it
+        # ordered by reversed insertion order.
+        # anyway, just the "reversed" part makes it
         # simpler to have  a Python list holding
         # a reference to all children rather
         # than just fecthing the nodes from Gegl
@@ -100,7 +127,7 @@ class Graph(object):
     def __repr__(self):
         return "Graph(%s)" % ", ".join("'%s'" % 
                 child.get_property("operation")
-                        for child in self._node.get_children())
+                        for child in self._children)
 
     def __call__(self):
         self._children[-1]._node.process()
