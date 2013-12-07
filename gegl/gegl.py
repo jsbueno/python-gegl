@@ -46,15 +46,22 @@ class OpNode(object):
             other = other._node
         return self._node.connect_from(input, other, output)
 
-    def connect_to(self, other, output="output", input="input"):
+    def connect_to(self, other, input="input", output="output"):
         if hasattr(other, "_node"):
             other = other._node
         return self._node.connect_to(output, other, input)
 
-    # Keep orginal Yosh's Pygegl ">>" and "<<" overriding for
+    # Keep original Yosh's Pygegl ">>" and "<<" overriding for
     # connecting nodes:
-    __lshift__ = connect_from
-    __rshift__ = connect_to
+    def __lshift__(self, other):
+        if self.connect_from(other):
+            return self
+        return None
+
+    def __rshift__(self, other):
+        if self.connect_to(other):
+            return other
+        return None
 
     def __repr__(self):
         return "OpNode('%s')" % self.operation
