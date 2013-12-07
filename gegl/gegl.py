@@ -30,9 +30,14 @@ class OpNode(object):
         return self
 
     def __setattr__(self, attr, value):
+        if isinstance(value, Color):
+            value = value._color
         self._node.set_property(attr, value)
 
     def __getattr__(self, attr):
+        res = self._node.get_property(attr)
+        if isinstance(res, _gegl.Color):
+            res = Color(res)
         return self._node.get_property(attr)
 
     def connect_from(self, other, output="output", input="input"):
@@ -134,6 +139,48 @@ class Graph(object):
 
     process = __call__
 
+class Color(object):
+    def __init__(self, r=1, g=1, b=1, a=1):
+        if isinstance(r, _gegl.Color):
+            self._color = r
+            return
+        self._color = _gegl.Color()
+        if hasattr(r, "__len__"):
+            if len(r) == 3:
+                r,g,b = r
+                a = 1.0
+            elif len(r) == 4:
+              r, g, b, a = r  
+        self.set_rgba(r, g, b, a)
+
+    def set_rgba(self,r ,g ,b ,a):
+        self._color.set_rgba(r,g,b,a)
+
+    def get_rgba(self):
+        return self._color.get_rgba()
+
+    def __getitem__(self, index):
+        return self.get_rgba()[index]
+
+    def __setitem__(self, index, value):
+        color = list(self.get_rgba())
+        color[index] = value
+        self.set_rgba(*color)
+
+    __len__ = lambda s: 4
+
+    def set_rgb(self, r,g,b):
+        self.set_rgba(r,g,b,self.a)
+
+    r = red = property(lambda s:s.get_rgba()[0], lambda s,v: s.__setitem__(0,v))
+    g = green = property(lambda s:s.get_rgba()[1], lambda s,v: s.__setitem__(1,v))
+    b = blue = property(lambda s:s.get_rgba()[2], lambda s,v: s.__setitem__(2,v))
+    a = alpha = property(lambda s:s.get_rgba()[3], lambda s,v: s.__setitem__(3,v))
+
+    def __repr__(self):
+        return "Color%s" % str(tuple(self))
+    
+    
 # Transparently make available all remaining GEGL calls:
 
 for key in dir(_gegl):
