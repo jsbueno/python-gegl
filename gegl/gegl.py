@@ -20,7 +20,7 @@ class OpNode(object):
     def __init__(self, operation, **kw):
         object.__setattr__(self, "_node",  _gegl.Node())
         self.operation = operation
-        for key, value in kw.iteritems():
+        for key, value in kw.items():
             setattr(self, key, value)
 
     @classmethod
@@ -38,7 +38,18 @@ class OpNode(object):
         res = self._node.get_property(attr)
         if isinstance(res, _gegl.Color):
             res = Color(res)
-        return self._node.get_property(attr)
+        return res
+   
+    #def __setitem__(self, key, value):
+        #return self.__setattr__(self, key, value)
+    
+    #def __getitem__(self, key):
+        #return getattr(self, value)
+    @property  
+    def properties(self):
+        return set(getattr(obj, "name") 
+                    for obj in 
+                    _gegl.Operation().list_properties(self.operation))
 
     def connect_from(self, other, output="output", input="input"):
         # Allow working with both wrapped and raw nodes:
@@ -64,7 +75,20 @@ class OpNode(object):
         return None
 
     def __repr__(self):
-        return "OpNode('%s')" % self.operation
+        props = []
+        for prop in self.properties:
+            value = getattr(self, prop)
+            props.append((prop, value))
+
+        return "OpNode('%s'%s%s)" % (self.operation,
+                     ", " if props else "", 
+                     ", ".join("%s=%s" % (prop, repr(value)) 
+                               for prop, value in sorted(props) ))
+                     
+    def __dir__(self):
+        base =  ['__class__', '__delattr__', '__dict__', '__doc__', '__format__', '__getattr__', '__getattribute__', '__hash__', '__init__', '__lshift__', '__module__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__rshift__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_from_raw_node', '_node', 'connect_from', 'connect_to', 'properties']
+        return base + sorted(self.properties)
+
 
 class Graph(object):
     """ Wrapper for a GEGL node which parents OP nodes.
@@ -138,8 +162,8 @@ class Graph(object):
 
     def __repr__(self):
         return "Graph(%s)" % ", ".join("'%s'" % 
-                child.get_property("operation")
-                        for child in self._children)
+                child.operation
+                for child in self._children)
 
     def __call__(self):
         self._children[-1]._node.process()

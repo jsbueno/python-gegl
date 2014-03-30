@@ -1,0 +1,4 @@
+To fix the path to GEGL types if they are in a different prefix
+than other system GIR repositories, set the  GI_TYPELIB_PATH, as in:
+
+export GI_TYPELIB_PATH=/opt/lib/girepository-1.0/

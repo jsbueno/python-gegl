@@ -5,8 +5,7 @@ GEGL
 Python lithweight wrapper for using GEGL - Generic Graphics Library
 (http://www.gegl.org)
 
-Currently working for Python 2 -
-but it should work for Python3 with minimal modifications.
+Currently working for Python 2 and Python3
 
 ***********************
 Justificative
@@ -54,3 +53,5 @@ Prerequisites
     (Unfortunatelly for now PyGOBject does not auto-install with distutils
     on real-life systems, so auto-detecting and installing it in the
     setup.py can't be achieved easily)
+
+   
