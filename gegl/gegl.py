@@ -20,8 +20,6 @@ class OpNode(object):
     """
     def __init__(self, operation, **kw):
         object.__setattr__(self, "_node",  _gegl.Node())
-        if not ":" in operation:
-            operation = "%s:%s" % (DEFAULT_OP_NAMESPACE, operation)
         self.operation = operation
         for key, value in kw.items():
             setattr(self, key, value)
@@ -32,12 +30,30 @@ class OpNode(object):
         object.__setattr__(self, "_node",  _node)
         return self
 
+    def _set_operation(self, value):
+        if self._node.get_property("operation") is not None:
+            raise ValueError("Operation in a node can't be "
+                              "changed once it is set.")
+        if not ":" in value:
+            value = "%s:%s" % (DEFAULT_OP_NAMESPACE, value)
+        self._node.set_property("operation", value)
+        self._reset_properties()
+
     def __setattr__(self, attr, value):
-        if isinstance(value, Color):
+        if attr.startswith("_"):
+            return object.__setattr__(self, attr, value)
+        if attr == "operation":
+            return self._set_operation(value)
+
+        if self._property_types[attr][0] == "GType GeglColor":
+            if not isinstance(value, Color):
+                value = Color(value)
             value = value._color
         self._node.set_property(attr, value)
 
     def __getattr__(self, attr):
+        if attr.startswith("_"):
+            return object.__getattribute__(self, attr)
         res = self._node.get_property(attr)
         if isinstance(res, _gegl.Color):
             res = Color(res)
@@ -54,14 +70,24 @@ class OpNode(object):
 
     def __getitem__(self, key):
         return getattr(self, key)
-    
+
     # GEGL-op properties != Python properties
     @property  
     def properties(self):
-        # TODO: cache this.
-        return set(getattr(obj, "name") 
-                    for obj in 
-                    _gegl.Operation().list_properties(self.operation))
+        if not "_property_names" in self.__dict__:
+            self._reset_properties()
+        return self._property_names
+
+    def _reset_properties(self):
+        # the actual value_type object is not, for now, as usefull as its str
+        # so we are keeping both
+        properties = {
+            prop.name: (repr(prop.value_type).strip("<>").rsplit(None,1)[0],
+                        prop.value_type)
+            for prop in _gegl.Operation().list_properties(self.operation)
+            }
+        self._property_names = set(properties.keys())
+        self._property_types = properties
 
     def connect_from(self, other, output="output", input="input"):
         # Allow working with both wrapped and raw nodes:
@@ -170,6 +196,18 @@ class Graph(object):
     def __len__(self):
         return len(self._children)
 
+    def __str__(self):
+        rev_children = {node._node: node for node in self._children}
+        last = self._children[-1]._node
+        connected_list = []
+        while last:
+            connected_list.append(rev_children.pop(last).operation)
+            last = last.get_producer("input", None)
+        output = " -> ".join(reversed(connected_list))
+        if rev_children:
+            output += "\n unconnected: " + ", ".join(rev_children.values())
+        return output
+
     def __repr__(self):
         return "Graph(%s)" % ", ".join("'%s'" % 
                 child.operation
@@ -177,6 +215,9 @@ class Graph(object):
 
     def __call__(self):
         self._children[-1]._node.process()
+
+    def to_xml(self, path_root="/"):
+        return self._children[-1]._node.to_xml(path_root)
 
     process = __call__
 
@@ -220,8 +261,18 @@ class Color(object):
 
     def __repr__(self):
         return "Color%s" % str(tuple(self))
-    
-    
+
+    def __eq__(self, other):
+        try:
+            if len(other) != 4:
+                return False
+        except TypeError:
+            return False
+        for item in zip(self, other):
+            if item[0] != item[1]:
+                return False
+        return True
+
 # Transparently make available all remaining GEGL calls:
 
 for key in dir(_gegl):
