@@ -4,6 +4,8 @@
 import sys
 from gi.repository import Gegl as _gegl
 
+DEFAULT_OP_NAMESPACE = "gegl"
+
 _gegl.init(sys.argv[1:])
 
 def list_operations(filter=""):
@@ -15,10 +17,11 @@ class OpNode(object):
 
     You can access OpNode._node attribute for raw access
     to the GEGL node as exposed by pygobject
-7
     """
     def __init__(self, operation, **kw):
         object.__setattr__(self, "_node",  _gegl.Node())
+        if not ":" in operation:
+            operation = "%s:%s" % (DEFAULT_OP_NAMESPACE, operation)
         self.operation = operation
         for key, value in kw.items():
             setattr(self, key, value)
@@ -39,14 +42,23 @@ class OpNode(object):
         if isinstance(res, _gegl.Color):
             res = Color(res)
         return res
-   
-    #def __setitem__(self, key, value):
-        #return self.__setattr__(self, key, value)
+
+    # Make properties available as items, 
+    # because a log of them have "-" in their names 
+    # eg. "line-height"
+    def __setitem__(self, key, value):
+        # too much user nursing?
+        if not key in self.properties:
+            raise KeyError("%s not a property for this operation")
+        return setattr(self, key, value)
+
+    def __getitem__(self, key):
+        return getattr(self, key)
     
-    #def __getitem__(self, key):
-        #return getattr(self, value)
+    # GEGL-op properties != Python properties
     @property  
     def properties(self):
+        # TODO: cache this.
         return set(getattr(obj, "name") 
                     for obj in 
                     _gegl.Operation().list_properties(self.operation))
@@ -140,8 +152,6 @@ class Graph(object):
         elif isinstance(op, _gegl.Node):
             node = OpNode._from_raw_node(op)
         else:
-            if not ":" in op:
-                op = "gegl:" + op
             node = OpNode(op, **params)
         self._node.add_child(node._node)
         if self.auto and self._children:

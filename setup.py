@@ -16,7 +16,7 @@ if "install" in sys.argv:
 
             Ensure you have installed:
                 pygobject,
-                a recent gegl build with geobject introspection installed
+                a recent GEGL build with gobject introspection installed
 
                 Package not installed!
 

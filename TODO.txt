@@ -1,0 +1,15 @@
+Smaller stuff:
+- create a way to insert new nodes in the graph, taking care of the connections
+- improve the graph representation to show the connections
+    ** includes getting a way to check wich nodes are connected to what.
+    right now node.get_consumers call is simply crashing - apparently a bug
+    in Pygobject.
+    *** workaround with a Python structure listing the nodes?
+- have a way to access operation's enums (for example, in "fractal-trace")
+- test
+
+
+Major stuff:
+- import and export Graphs from XML
+- being ble to set up graphs as meta-operations
+  *(require GEGL hacking)
