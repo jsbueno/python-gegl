@@ -103,6 +103,15 @@ class OpNode(object):
     def has_pad(self, pad="output"):
         return self._node.has_pad(pad)
 
+    def get_producer(self, pad="input", extra=None):
+        return self._node.get_producer(pad, extra)
+
+    # call to _gegl.node_get_consumers(...)
+    # is broken at the moment and there is no known workaround
+    # TODO
+    #def get_consumers(self, pad="output"):
+    #    pass
+
     # Keep original Yosh's Pygegl ">>" and "<<" overriding for
     # connecting nodes:
     def __lshift__(self, other):
@@ -197,6 +206,9 @@ class Graph(object):
         else:
             node = OpNode(op, **params)
         self._node.add_child(node._node)
+        # attention: creating cyclic reference:
+        # TODO: use weakrefs
+        node._node._parent_graph = self
         if self.auto and self._children:
             source_node = self
             # Allows to properly connect to subgraphs inside the current graph
@@ -248,39 +260,41 @@ class Graph(object):
     def __len__(self):
         return len(self._children)
 
-    def __str__(self):
-        return self.str_art(parent=None)
-
-    def str_art(self, parent=None, decorate=True):
-        # currently b0rk
-        last = self._children[-1]._node
-        connected_list = []
-        while last:
-            last_parent = last.get_parent()
-            if last_parent is not self._node:
-                # different subgraph
-                last_graph = last_parent.container
-                connected_list.append(last_graph.str_art(self))
-                last = last_graph._children[0]._node.get_producer("input", None)
-            else:
-                op = last.get_property("operation")
-                if op is not None:
-                    connected_list.append(last.get_property("operation"))
-                last = last.get_producer("input", None)
-
-        output = " -> ".join(reversed(connected_list))
-        if decorate:
-            output = "Graph(%s)" % output
-        return output
-
     def __repr__(self):
+        return self._recursive_repr()
+
+    def _recursive_repr(self, starting_index=0):
+        index = starting_index
         parts = []
+        aux_graphs = []
         for child in self._children:
             op = child.operation
-            if op == "meta":
+            if op == "meta": # it is a sub-graph
                 op = repr(child)
+            elif child.has_pad("aux"):
+                producer = child.get_producer("aux")
+                if producer is None:
+                    op += "[*]"
+                else:
+                    op += "[@%d]" % index
+                    index += 1
+                    if hasattr(producer, "_parent_graph"):
+                        aux_graphs.append(producer._parent_graph)
+                    else:
+                        aux_graphs.append(producer)
             parts.append(op)
-        return "Graph(%s)" % ", ".join(parts)
+        result = "Graph(%s)" % ", ".join("%d:%s" % (j, part) 
+                    for j, part in enumerate(parts))
+        for i, aux_graph in enumerate(aux_graphs, starting_index):
+            if isinstance(aux_graph, Graph):
+                result += "\n\t%d - %s" % (i, "\n\t".join(
+                    line for line in 
+                        aux_graph._recursive_repr(index).split("\n"))
+                    )
+            else:
+                result += "\n\t%d - [Low level]" % i
+
+        return result
 
     def __call__(self):
         self._children[-1]._node.process()

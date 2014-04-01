@@ -129,6 +129,19 @@ class TestGraph(unittest.TestCase):
         graph = gegl.Graph("png-load", "invert", "png-save")
         self.assertEqual(graph.to_xml().split(), expected)
 
+    def test_recursive_representation(self):
+        result = "Graph(0:gegl:color, 1:svg:src-over[@0], 2:gegl:crop, " \
+        "3:gegl:sdl-display)\n\t0 - Graph(0:gegl:grid, 1:svg:src-over[@1], " \
+        "2:svg:src-over[@2])\n\t\t1 - Graph(0:gegl:rectangle, " \
+        "1:gegl:rotate)\n\t\t2 - Graph(0:gegl:rectangle)"
+        g1 = gegl.Graph("color", "over", "crop", "sdl-display")
+        g2 = gegl.Graph("grid", "over", "over")
+        g2.plug_as_aux(g1[1])
+        g3 = gegl.Graph("rectangle", "rotate")
+        g3.plug_as_aux(g2[1])
+        g4 = gegl.Graph("rectangle")
+        g4.plug_as_aux(g2[2])
+        self.assertEqual(repr(g1), result)
 
 class TestColor(unittest.TestCase):
 
