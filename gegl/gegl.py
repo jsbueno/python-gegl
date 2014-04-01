@@ -44,6 +44,8 @@ class OpNode(object):
             return object.__setattr__(self, attr, value)
         if attr == "operation":
             return self._set_operation(value)
+        elif attr in {"aux", "input", "output"}:
+            return self._set_pad(attr, value)
         if "_" in attr:
             attr = attr.replace("_", "-")
         try:
@@ -55,6 +57,8 @@ class OpNode(object):
     def __getattr__(self, attr):
         if attr.startswith("_"):
             return object.__getattribute__(self, attr)
+        elif attr in {"aux", "input", "output"}:
+            return self._get_pad(attr)
         if "_" in attr:
             attr = attr.replace("_", "-")
         return self.__getitem__(attr)
@@ -90,6 +94,13 @@ class OpNode(object):
         return self._property_names
 
     def _reset_properties(self):
+        #Caches in Python the property names and descriptions
+        #for the GEGL operation.
+        
+        #Sets up some required attributes for the object, since
+        #__init__ may not be called, depending on the 
+        #factory function called.
+        self._pads = {"output":[]}
         # the actual value_type object is not, for now, as usefull as its str
         # so we are keeping both
         properties = {
@@ -101,15 +112,32 @@ class OpNode(object):
         self._property_types = properties
 
     def connect_from(self, other, output="output", input="input"):
+        self._pads[input] = other
+        if isinstance(other, Graph):
+            other = other._children[-1]
         # Allow working with both wrapped and raw nodes:
         if hasattr(other, "_node"):
             other = other._node
         return self._node.connect_from(input, other, output)
 
     def connect_to(self, other, input="input", output="output"):
+        if not output in self._pads:
+            self._pads[output] = []
+        self._pads[output].append(other)
+        if isinstance(other, Graph):
+            other = other._children[0]
         if hasattr(other, "_node"):
             other = other._node
         return self._node.connect_to(output, other, input)
+
+    def _set_pad(self, pad, node):
+        if pad in {"aux", "input"}:
+            self.connect_from(node, input=pad)
+        else: # output
+            self.connect_to(node)
+
+    def _get_pad(self, pad):
+        return self._pads[pad]
 
     def has_pad(self, pad="output"):
         return self._node.has_pad(pad)
@@ -125,6 +153,9 @@ class OpNode(object):
 
     # Keep original Yosh's Pygegl ">>" and "<<" overriding for
     # connecting nodes:
+    # NB: these are untested and likely not working. Wait
+    # for a proper implementation at the Graph object instead.
+
     def __lshift__(self, other):
         if self.connect_from(other):
             return self
@@ -147,7 +178,15 @@ class OpNode(object):
                                for prop, value in sorted(props) ))
                      
     def __dir__(self):
-        base =  ['__class__', '__delattr__', '__dict__', '__doc__', '__format__', '__getattr__', '__getattribute__', '__hash__', '__init__', '__lshift__', '__module__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__rshift__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_from_raw_node', '_node', 'connect_from', 'connect_to', 'properties']
+        base =  ['__class__', '__delattr__', '__dict__', '__doc__', 
+                 '__format__', '__getattr__', '__getattribute__',
+                 '__hash__', '__init__', '__lshift__', '__module__', 
+                 '__new__', '__reduce__', '__reduce_ex__', '__repr__', 
+                 '__rshift__', '__setattr__', '__sizeof__', '__str__',
+                 '__subclasshook__', '__weakref__', '_from_raw_node', 
+                 '_node', 'connect_from', 'connect_to',
+                 'properties', 'has_pad', 'aux', 'input', 'output', 
+                 'operation',]
         return base + sorted(self.properties)
 
 
@@ -312,7 +351,6 @@ class Graph(object):
 
     def to_xml(self, path_root="/"):
         return self._children[-1]._node.to_xml(path_root)
-
 
     process = __call__
 

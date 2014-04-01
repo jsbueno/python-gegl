@@ -1,22 +1,25 @@
-Smaller stuff:
-- think of a way to connect subgraphs to aux and input ports of nodes
-    in other existing graphs
-    - improve the graph representation to show the subgraphs
-    - refactor the gegl-node creation - what is the role of the outer node?
-
+Smaller stuff todo:
 - create a way to insert new nodes in the graph, taking care of the connections
-
 - have a way to access operation's enums (for example, in "fractal-trace"
 - simplify the gegl-node object creation in gegl.Graph
    (do we "need" the outer node?)
-- fix the represenation for complex graphs
-- make properties accept "-" containing properties replacing then with "_"
-   with python property syntax
+- check (and test) the representation for complex graphs that embed smaller ones
+(there is a test for a simple embedding already)
+- Make the repr display other Graphs connected to the [input pad of the] first node 
+of the current graph. Currently not displayed
 
-
-Major stuff:
+Major stuff todo:
 - import and export Graphs from XML
 - being able to set up graphs as meta-operations
-  *(require GEGL hacking)
-  
+  *(requires GEGL hacking)
 
+
+Done:
+- a way to connect subgraphs to aux and input ports of nodes
+    in other existing graphs
+- fixed the representation for complex graphs
+- translation of "_" to "-" when acessing gegl node
+properties as Python properties
+- input, output and aux in OpNodes now work as Python
+properties that automatically connects Graphs, Nodes or
+_gegl.Nodes assigned to them.

@@ -76,7 +76,21 @@ class TestNodes(unittest.TestCase):
         node.line_width = 0
         self.assertEqual(node["line-width"], 0)
 
+    def test_connect_graph_to_aux_pad_as_property(self):
+        g1 = gegl.Graph("color", "over", "crop", "sdl-display")
+        g2 = gegl.Graph("grid", "nop")
+        g1[1].aux = g2
+        self.assertEqual(g1[1].aux, g2)
+        self.assertEqual(g1[1]._node.get_producer("aux", None), g2[-1]._node)
+        # if this works, "input" also works
 
+    def test_connect_graph_to_output_pad_as_property(self):
+        g1 = gegl.Graph("color", "crop")
+        g2 = gegl.Graph("nop", "sdl-display")
+        g1[1].output = g2
+        self.assertEqual(g1[1].output[0], g2)
+        self.assertEqual(g2[0]._node.get_producer("input", None), g1[1]._node)
+        # get_consumers is broken
 
 class TestGraph(unittest.TestCase):
 
@@ -147,6 +161,12 @@ class TestGraph(unittest.TestCase):
         g4 = gegl.Graph("rectangle")
         g4.plug_as_aux(g2[2])
         self.assertEqual(repr(g1), result)
+
+    def test_embeded_representation(self):
+        g2 = gegl.Graph("crop")
+        g1 = gegl.Graph("color", g2, "sdl-display")
+        self.assertEqual(repr(g1), 
+            "Graph(0:gegl:color, 1:Graph(0:gegl:crop), 2:gegl:sdl-display)")
 
 class TestColor(unittest.TestCase):
 
