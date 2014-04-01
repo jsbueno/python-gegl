@@ -44,32 +44,43 @@ class OpNode(object):
             return object.__setattr__(self, attr, value)
         if attr == "operation":
             return self._set_operation(value)
+        if "_" in attr:
+            attr = attr.replace("_", "-")
+        try:
+            self.__setitem__(attr, value)
+        except KeyError:
+            raise ValueError("%s not a property for this operation" % attr)
+
+
+    def __getattr__(self, attr):
+        if attr.startswith("_"):
+            return object.__getattribute__(self, attr)
+        if "_" in attr:
+            attr = attr.replace("_", "-")
+        return self.__getitem__(attr)
+
+
+
+    # Make properties available as items, 
+    # because a log of them have "-" in their names 
+    # eg. "line-height"
+    def __setitem__(self, attr, value):
+        # too much user nursing?
+        if not attr in self.properties:
+            raise KeyError("%s not a property for this operation" % attr)
 
         if self._property_types[attr][0] == "GType GeglColor":
             if not isinstance(value, Color):
                 value = Color(value)
             value = value._color
+        # TODO: check for other special attribute types
         self._node.set_property(attr, value)
 
-    def __getattr__(self, attr):
-        if attr.startswith("_"):
-            return object.__getattribute__(self, attr)
+    def __getitem__(self, attr):
         res = self._node.get_property(attr)
         if isinstance(res, _gegl.Color):
             res = Color(res)
         return res
-
-    # Make properties available as items, 
-    # because a log of them have "-" in their names 
-    # eg. "line-height"
-    def __setitem__(self, key, value):
-        # too much user nursing?
-        if not key in self.properties:
-            raise KeyError("%s not a property for this operation")
-        return setattr(self, key, value)
-
-    def __getitem__(self, key):
-        return getattr(self, key)
 
     # GEGL-op properties != Python properties
     @property  

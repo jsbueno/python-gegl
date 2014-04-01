@@ -31,6 +31,7 @@ class TestNodes(unittest.TestCase):
         node = gegl.OpNode("png-load")
         self.assertEqual(node.properties, {"path"})
         self.assertEqual(node.path, "")
+        self.assertRaises(ValueError, node.__setattr__, "fnord", "blah")
 
     def test_properties_as_items(self):
         node = gegl.OpNode("png-load")
@@ -70,6 +71,10 @@ class TestNodes(unittest.TestCase):
         node = gegl.OpNode("color")
         self.assertFalse(node.has_pad("input"))
 
+    def test_attribute_dash_replacement(self):
+        node = gegl.OpNode("grid")
+        node.line_width = 0
+        self.assertEqual(node["line-width"], 0)
 
 
 
