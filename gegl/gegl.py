@@ -100,6 +100,9 @@ class OpNode(object):
             other = other._node
         return self._node.connect_to(output, other, input)
 
+    def has_pad(self, pad="output"):
+        return self._node.has_pad(pad)
+
     # Keep original Yosh's Pygegl ">>" and "<<" overriding for
     # connecting nodes:
     def __lshift__(self, other):
@@ -140,14 +143,28 @@ class Graph(object):
 
     """
 
+    operation = "meta"
+
     def __init__(self,  *args, **kw):
         self.auto = True
         if "auto" in kw:
+            # disabling "auto" actually has undefined behaviors.
+            # all nodes in a graph should be connected in the
+            # order of insertion. Subgraphs should be created
+            # as another instance of this class.
             self.auto = kw.pop("auto")
         self._node = _gegl.Node()
-        # TODO: maybe specialize self._children so
-        # that it cannot be modified, thus becoming
-        # inconsistent with the Graph contents;
+        
+        # Anotating this pthon class in the GIR object, in a circular
+        # reference.
+        # pay attention in object cycles:
+        self._node.container = self
+
+        # ._children is mostly a "bag of nodes" 
+        # so that we have an easy reference on the Python side
+        # the important thing is the last node on a list -
+        # which is the one actually processed, or which
+        # output is connectes as a subgraph
         self._children = []
         for op in args:
             self.append(op)
@@ -173,7 +190,7 @@ class Graph(object):
             params = dict(params)
         else:
             params = {}
-        if isinstance(op, OpNode):
+        if isinstance(op, (OpNode, Graph)):
             node = op
         elif isinstance(op, _gegl.Node):
             node = OpNode._from_raw_node(op)
@@ -181,7 +198,11 @@ class Graph(object):
             node = OpNode(op, **params)
         self._node.add_child(node._node)
         if self.auto and self._children:
-            node.connect_from(self._children[-1])
+            source_node = self
+            # Allows to properly connect to subgraphs inside the current graph
+            while isinstance(source_node, Graph):
+                source_node = source_node._children[-1]
+            node.connect_from(source_node)
         # Not shure if Gegl's Node.get_children is
         # ordered by reversed insertion order.
         # anyway, just the "reversed" part makes it
@@ -190,6 +211,37 @@ class Graph(object):
         # than just fecthing the nodes from Gegl
         self._children.append(node)
 
+    def insert(self, index, node):
+        # TODO
+        pass
+
+    def connect_to(self, other, input="input", output="output"):
+        # This is the same as connecting the current last node
+        # of the graph to another node/graph
+        if isinstance(other, Graph):
+            other = other._children[0]
+        self._children[-1].connect_to(other, input, output)
+
+    def connect_from(self, other, output="output", input="input"):
+        if isinstance(other, Graph):
+            other = other._children[-1]
+        self._children[0].connect_from(other, output, input)
+
+    def plug_as_aux(self, other):
+        """Helper function to plug this
+        subgraph in the "aux" pad of some other
+        graph - 
+        eg.:
+        >>> g1 = gegl.Graph("color", "over", "crop", "sdl-display")
+        >>> g2 = gegl.Graph("grid", "rotate")
+        >>> g2.plug_as_aux(g1[1])  # "over"  node
+        >>> g1[0].value=(1,1,1)
+        >>> g1[2].width = g1[2].height = 320
+        >>> g2[1].degrees = 30
+        >>> g1()
+        """
+        self.connect_to(other, input="aux")
+
     def __getitem__(self, index):
         return self._children[index]
 
@@ -197,27 +249,45 @@ class Graph(object):
         return len(self._children)
 
     def __str__(self):
-        rev_children = {node._node: node for node in self._children}
+        return self.str_art(parent=None)
+
+    def str_art(self, parent=None, decorate=True):
+        # currently b0rk
         last = self._children[-1]._node
         connected_list = []
         while last:
-            connected_list.append(rev_children.pop(last).operation)
-            last = last.get_producer("input", None)
+            last_parent = last.get_parent()
+            if last_parent is not self._node:
+                # different subgraph
+                last_graph = last_parent.container
+                connected_list.append(last_graph.str_art(self))
+                last = last_graph._children[0]._node.get_producer("input", None)
+            else:
+                op = last.get_property("operation")
+                if op is not None:
+                    connected_list.append(last.get_property("operation"))
+                last = last.get_producer("input", None)
+
         output = " -> ".join(reversed(connected_list))
-        if rev_children:
-            output += "\n unconnected: " + ", ".join(rev_children.values())
+        if decorate:
+            output = "Graph(%s)" % output
         return output
 
     def __repr__(self):
-        return "Graph(%s)" % ", ".join("'%s'" % 
-                child.operation
-                for child in self._children)
+        parts = []
+        for child in self._children:
+            op = child.operation
+            if op == "meta":
+                op = repr(child)
+            parts.append(op)
+        return "Graph(%s)" % ", ".join(parts)
 
     def __call__(self):
         self._children[-1]._node.process()
 
     def to_xml(self, path_root="/"):
         return self._children[-1]._node.to_xml(path_root)
+
 
     process = __call__
 

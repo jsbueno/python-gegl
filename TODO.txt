@@ -6,10 +6,8 @@ Smaller stuff:
     in Pygobject.
     *** workaround with a Python structure listing the nodes?
     **** get_producer does work - work around enough
-- have a way to access operation's enums (for example, in "fractal-trace")
-- tests
-
-- simplify the gegl-node object creation in geggl.Graph
+- have a way to access operation's enums (for example, in "fractal-trace"
+- simplify the gegl-node object creation in gegl.Graph
    (do we "need" the outer node?)
 - simplify connectiing subgraphs to aux and input ports of nodes
     in other existing graphs

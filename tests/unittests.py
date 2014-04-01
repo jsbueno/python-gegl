@@ -62,6 +62,14 @@ class TestNodes(unittest.TestCase):
         self.assertRaises(ValueError, setattr,   node, 
                           "operation",  "gegl:png-save")
 
+    def test_node_has_pad(self):
+        node = gegl.OpNode("over")
+        self.assertTrue(node.has_pad("input"))
+        self.assertTrue(node.has_pad("output"))
+        self.assertTrue(node.has_pad("aux"))
+        node = gegl.OpNode("color")
+        self.assertFalse(node.has_pad("input"))
+
 
 
 
@@ -167,6 +175,15 @@ class TestColor(unittest.TestCase):
     def test_compare_to_tuple(self):
         color = gegl.Color(0, 0, 0, 1)
         self.assertEqual(color, (0,0,0,1))
+
+
+class TestGraphConnections(unittest.TestCase):
+
+    def test_graph_connects_as_aux(self):
+        g1 = gegl.Graph("color", "over", "crop", "sdl-display")
+        g2 = gegl.Graph("grid", "rotate")
+        g2.plug_as_aux(g1[1])  # "over"  node
+        self.assertIs(g1[1]._node.get_producer("aux", None), g2[-1]._node)
 
 
 if __name__ == "__main__":
