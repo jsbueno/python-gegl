@@ -96,6 +96,23 @@ class TestNodes(unittest.TestCase):
         self.assertEqual(g2[0]._node.get_producer("input", None), g1[1]._node)
         # get_consumers is broken
 
+    def test_disconnect(self):
+        g1 = gegl.Graph("color", "sdl-display")
+        g1[1].disconnect()
+        self.assertIs(g1[1]._node.get_producer("input", None), None)
+        self.assertEqual(g1[1].input, None)
+        self.assertEqual(g1[0].output, [])
+
+    def test_disconnect_across_graphs(self):
+        g1 = gegl.Graph("color", "crop")
+        g2 = gegl.Graph("sdl-display")
+        g2[0].input = g1
+        self.assertTrue(g2[0]._node.get_producer("input", None))
+        g2[0].disconnect()
+        self.assertIs(g2[0]._node.get_producer("input", None), None)
+        self.assertEqual(g2[0].input, None)
+        self.assertEqual(g1[1].output, [])
+
 class TestGraph(unittest.TestCase):
 
     def test_can_instantiate_from_string(self):

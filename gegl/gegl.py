@@ -179,6 +179,19 @@ class OpNode(object):
 
     keys = lambda s: s.properties
 
+    def disconnect(self, pad="input"):
+        producer = self._pads.get(pad, None)
+        self._pads[pad] = None
+        result = self._node.disconnect(pad)
+        if isinstance(producer, Graph):
+            producer = producer[-1]
+        for i, item in enumerate(producer.output):
+            if item is self or item is self._parent_graph:
+                del producer.output[i]
+                break
+        return result
+    
+
     def __dir__(self):
         base =  ['__class__', '__delattr__', '__dict__', '__doc__', 
                  '__format__', '__getattr__', '__getattribute__',
@@ -188,7 +201,7 @@ class OpNode(object):
                  '__subclasshook__', '__weakref__', '_from_raw_node', 
                  '_node', 'connect_from', 'connect_to', 'keys',
                  'properties', 'has_pad', 'aux', 'input', 'output', 
-                 'operation',]
+                 'operation','disconnect']
         return base + sorted(self.properties)
 
 

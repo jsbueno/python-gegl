@@ -7,6 +7,7 @@ Smaller stuff todo:
 (there is a test for a simple embedding already)
 - Make the repr display other Graphs connected to the [input pad of the] first node 
 of the current graph. Currently not displayed
+- implement input, output and aux properties to the Graph
 
 Major stuff todo:
 - import and export Graphs from XML
