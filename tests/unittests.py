@@ -63,6 +63,10 @@ class TestNodes(unittest.TestCase):
         self.assertRaises(ValueError, setattr,   node, 
                           "operation",  "gegl:png-save")
 
+    def test_keys_equal_gegl_properties(self):
+        node = gegl.OpNode("color")
+        self.assertEqual(sorted(node.keys()), ["format", "value"])
+
     def test_node_has_pad(self):
         node = gegl.OpNode("over")
         self.assertTrue(node.has_pad("input"))
@@ -167,6 +171,7 @@ class TestGraph(unittest.TestCase):
         g1 = gegl.Graph("color", g2, "sdl-display")
         self.assertEqual(repr(g1), 
             "Graph(0:gegl:color, 1:Graph(0:gegl:crop), 2:gegl:sdl-display)")
+        
 
 class TestColor(unittest.TestCase):
 

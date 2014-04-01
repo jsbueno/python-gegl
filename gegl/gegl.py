@@ -176,7 +176,9 @@ class OpNode(object):
                      ", " if props else "", 
                      ", ".join("%s=%s" % (prop, repr(value)) 
                                for prop, value in sorted(props) ))
-                     
+
+    keys = lambda s: s.properties
+
     def __dir__(self):
         base =  ['__class__', '__delattr__', '__dict__', '__doc__', 
                  '__format__', '__getattr__', '__getattribute__',
@@ -184,7 +186,7 @@ class OpNode(object):
                  '__new__', '__reduce__', '__reduce_ex__', '__repr__', 
                  '__rshift__', '__setattr__', '__sizeof__', '__str__',
                  '__subclasshook__', '__weakref__', '_from_raw_node', 
-                 '_node', 'connect_from', 'connect_to',
+                 '_node', 'connect_from', 'connect_to', 'keys',
                  'properties', 'has_pad', 'aux', 'input', 'output', 
                  'operation',]
         return base + sorted(self.properties)
