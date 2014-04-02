@@ -421,6 +421,98 @@ class Color(object):
                 return False
         return True
 
+class Buffer(object):
+    """
+    High level interface to gegl's Buffer objects
+    
+    The current gir bindings make the raw buffer
+    a bit tricky to use - in
+    particular, the "get" method here allows
+    access to the buffer's binary's contents.
+    
+    The low level object can be acessed in buffer.buffer.
+    These buffers are ok to be on used with the 
+    "gegl:write-buffer" operation
+    """
+    def __init__(self, rect, format="RGBA u8"):
+        self.rect = Rectangle(rect)
+        self.format = format
+        # the standard Buffer constructor in gegl
+        # is currently unusable - this alternative constructor
+        # is a nice work-around
+        self.buffer = _gegl.Buffer.new(format, *self.rect.as_sequence())
+
+    def get(self, scale=1, format=None):
+        if format is None:
+            format = self.format
+        return self.buffer.get(self.buffer.get_extent(),
+                               scale, format, _gegl.AUTO_ROWSTRIDE)
+
+    def get_extent(self):
+        return Rectangle(self.buffer.get_extent())
+
+
+class Rectangle(object):
+    def __init__(self, multi=0, y=0, width=640, height=480):
+        """
+        Creates a gegl Rectangle Object 
+        
+        The first argument can be a Buffer - its extents will be used
+        as the rectangle bounds - 
+        The first argument can also be a 4-tuple or other sequence,
+        which will be interpreted as (x,y, width, height). If
+        a 2-tuple or sequnece, the numbers are used as width and height,
+        with x = y = 0.
+        
+        The native gir gegl.Rectangle is public at the .rect attribute
+        """
+        #self.rect = _gegl.Rect()
+        if isinstance(multi, Buffer):
+            multi = multi.buffer
+        if isinstance(multi, _gegl.Buffer):
+            self.rect = multi.get_extent()
+            return
+        elif isinstance(multi, _gegl.Rectangle):
+            # just wrap it:
+            self.rect = multi
+            return
+        elif isinstance(multi, Rectangle):
+            x, y, width, height = multi.as_sequence()
+        else:
+            try:
+                # if two tuple, use as with and height
+                width, height = multi
+            except ValueError:
+                try:
+                    x, y, width, height = multi
+                except ValueError:
+                    x = multi
+            except TypeError:
+                x = multi
+            else:
+                x = y = 0
+        self.rect = _gegl.Rectangle()
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+    x = property(lambda s: s.rect.x,
+                 lambda s,v: setattr(s.rect, "x", v))
+    y = property(lambda s: s.rect.y,
+                 lambda s,v: setattr(s.rect, "y", v))
+    width = property(lambda s: s.rect.width,
+                     lambda s,v: setattr(s.rect, "width", v))
+    height = property(lambda s: s.rect.height,
+                      lambda s,v: setattr(s.rect, "height", v))
+
+    def as_sequence(self):
+        return self.x, self.y, self.width, self.height
+
+    def __repr__(self):
+        return "Rectangle%s" % self.as_sequence()
+
+
 # Transparently make available all remaining GEGL calls:
 
 for key in dir(_gegl):

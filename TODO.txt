@@ -8,6 +8,16 @@ Smaller stuff todo:
 - Make the repr display other Graphs connected to the [input pad of the] first node 
 of the current graph. Currently not displayed
 - implement input, output and aux properties to the Graph
+- Keep consistency of the ._pads dictionary in opnodes in the _other_ operand
+when connecting  pads. (disconnecting is taking care of that already)
+- Make Graphs pickeable (python serializable)
+
+wrap GEGL REctangles
+wrap Gegl Buffers
+   # after getting a work-around to get buffers
+   # instatiated at all - right now _gegl.Buffer call is broken
+   # as it does not accept any parameters.
+
 
 Major stuff todo:
 - import and export Graphs from XML

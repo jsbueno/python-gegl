@@ -237,6 +237,68 @@ class TestColor(unittest.TestCase):
         self.assertEqual(color, (0,0,0,1))
 
 
+class TestRectangle(unittest.TestCase):
+    def test_default_parameters(self):
+        r = gegl.Rectangle()
+        self.assertIsInstance(r, gegl.Rectangle)
+        self.assertIsInstance(r.rect, gegl.gegl._gegl.Rectangle)
+    
+
+    def test_explicit_parameters(self):
+        r = gegl.Rectangle(10, 10, 30, 30)
+        self.assertEqual(r.as_sequence(), (10, 10, 30, 30))
+
+    def test_4_tuple_parameters(self):
+        r = gegl.Rectangle((10, 10, 30, 30))
+        self.assertEqual(r.as_sequence(), (10, 10, 30, 30))
+
+    def test_2_tuple_parameters(self):
+        r = gegl.Rectangle((30, 30))
+        self.assertEqual(r.as_sequence(), (0, 0, 30, 30))
+
+    def test_rectangle(self):
+        r1 = gegl.Rectangle()
+        r2 = gegl.Rectangle(r1)
+        self.assertIsNot(r1.rect, r2.rect)
+        self.assertEqual(r1.as_sequence(), r2.as_sequence())
+
+    def test_low_level_buffer(self):
+        buffer = gegl.Buffer((0,0,320,240))
+        r = gegl.Rectangle(buffer.buffer)
+        self.assertEqual(r.as_sequence(), (0,0,320,240))
+
+    def test_high_level_buffer(self):
+        buffer = gegl.Buffer((0,0,320,240))
+        r = gegl.Rectangle(buffer)
+        self.assertEqual(r.as_sequence(), (0,0,320,240))
+
+    def test_rectangle_wrap(self):
+        low_rect = gegl.gegl._gegl.Rectangle()
+        rect = gegl.Rectangle(low_rect)
+        self.assertIs(rect.rect, low_rect)
+
+    def test_property_reads(self):
+        r = gegl.Rectangle(10,10, 30, 30)
+        self.assertEqual(r.x, 10)
+        self.assertEqual(r.y, 10)
+        self.assertEqual(r.width, 30)
+        self.assertEqual(r.height, 30)
+
+class TestBuffer(unittest.TestCase):
+    def test_can_instantiate(self):
+        buffer = gegl.Buffer((0,0,320,240))
+        self.assertIsInstance(buffer.buffer, gegl.gegl._gegl.Buffer)
+    
+    def test_get_extent(self):
+        buffer = gegl.Buffer((0,0,320,240))
+        self.assertEqual(buffer.get_extent().as_sequence(), (0,0,320,240))
+        
+    def test_get_data(self):
+        buffer = gegl.Buffer((100,100))
+        self.assertEqual(len(buffer.get()), 100 * 100 * 4) 
+
+
+
 class TestGraphConnections(unittest.TestCase):
 
     def test_graph_connects_as_aux(self):
