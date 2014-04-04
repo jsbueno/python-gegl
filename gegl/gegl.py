@@ -77,6 +77,13 @@ class OpNode(object):
             if not isinstance(value, Color):
                 value = Color(value)
             value = value._color
+        elif self._property_types[attr][2].name == "buffer":
+            if not isinstance(value, Buffer):
+                value = Buffer(value)
+            value = value.buffer
+        #Currently there are no ops that use Rectangle as an input parameter 
+        #  
+        # TODO: write tests this parameter translation stuff
         # TODO: check for other special attribute types
         self._node.set_property(attr, value)
 
@@ -84,6 +91,11 @@ class OpNode(object):
         res = self._node.get_property(attr)
         if isinstance(res, _gegl.Color):
             res = Color(res)
+        elif isinstance(res, _gegl.Buffer):
+            # TODO: figure out  a way of retrieving the Buffer data format.
+            res = Buffer(res)
+        elif isinstance(res, _gegl.Rectangle):
+            res = Rectangle(res)
         return res
 
     # GEGL-op properties != Python properties
@@ -105,7 +117,8 @@ class OpNode(object):
         # so we are keeping both
         properties = {
             prop.name: (repr(prop.value_type).strip("<>").rsplit(None,1)[0],
-                        prop.value_type)
+                        prop.value_type,
+                        prop)
             for prop in _gegl.Operation().list_properties(self.operation)
             }
         self._property_names = set(properties.keys())
@@ -435,6 +448,12 @@ class Buffer(object):
     "gegl:write-buffer" operation
     """
     def __init__(self, rect, format="RGBA u8"):
+        if isinstance(rect, _gegl.Buffer):
+            self.buffer = rect
+            # gegl's gegl_buffer_{get,set}_format 
+            # are not showing up under gir instrspection. :-/
+            self.format = format
+            return
         self.rect = Rectangle(rect)
         self.format = format
         # the standard Buffer constructor in gegl

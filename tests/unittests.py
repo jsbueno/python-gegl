@@ -296,6 +296,11 @@ class TestBuffer(unittest.TestCase):
     def test_get_data(self):
         buffer = gegl.Buffer((100,100))
         self.assertEqual(len(buffer.get()), 100 * 100 * 4) 
+    
+    def test_buffer_wrap(self):
+        lbuffer =  gegl.gegl._gegl.Buffer.new("RGBA u8", 0, 0, 10, 10)
+        buffer = gegl.Buffer(lbuffer)
+        self.assertIs(buffer.buffer, lbuffer)
 
 
 
