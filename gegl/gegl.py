@@ -108,7 +108,7 @@ class OpNode(object):
     def _reset_properties(self):
         #Caches in Python the property names and descriptions
         #for the GEGL operation.
-        
+
         #Sets up some required attributes for the object, since
         #__init__ may not be called, depending on the 
         #factory function called.
@@ -157,6 +157,14 @@ class OpNode(object):
 
     def get_producer(self, pad="input", extra=None):
         return self._node.get_producer(pad, extra)
+    
+    def set(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+    # And an alias to the same name used in 
+    # C GEGL Nodes:
+    set_properties = set
 
     # call to _gegl.node_get_consumers(...)
     # is broken at the moment and there is no known workaround

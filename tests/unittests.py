@@ -112,6 +112,13 @@ class TestNodes(unittest.TestCase):
         self.assertIs(g2[0]._node.get_producer("input", None), None)
         self.assertEqual(g2[0].input, None)
         self.assertEqual(g1[1].output, [])
+        
+    def test_set_attributes(self):
+        node = gegl.OpNode("crop")
+        node.set(width=640, height=480)
+        self.assertEqual(node.width, 640)
+        self.assertEqual(node.height, 480)
+
 
 class TestGraph(unittest.TestCase):
 
