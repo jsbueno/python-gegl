@@ -465,6 +465,9 @@ class Color(object):
         if isinstance(r, _gegl.Color):
             self._color = r
             return
+        if isinstance(r, str):
+            self._color = _gegl.Color.new(r)
+            return
         self._color = _gegl.Color()
         if hasattr(r, "__len__"):
             if len(r) == 3:

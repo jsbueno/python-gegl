@@ -226,6 +226,10 @@ class TestColor(unittest.TestCase):
         self.assertAlmostEqual(color.g, 0.2, delta=1e-5)
         self.assertAlmostEqual(color.b, 0.3, delta=1e-5)
         self.assertAlmostEqual(color.a, 0.4, delta=1e-5)
+    
+    def test_creates_from_string(self):
+        color = gegl.Color("#00ff00")
+        self.assertEqual(color, (0, 1, 0, 1))
 
     def test_components_by_index(self):
         color = gegl.Color(0.1, 0.2, 0.3, 0.4)
@@ -379,8 +383,6 @@ class TestGraphManipulations(unittest.TestCase):
         self.assertEqual(graph[1].operation, "gegl:crop")
         self.assertEqual(graph[1].input, graph[0])
         self.assertEqual(graph[2].input, graph[1])
-
-class TestGraphConnections(unittest.TestCase):
 
     def test_graph_connects_as_aux(self):
         g1 = gegl.Graph("color", "over", "crop", "sdl-display")

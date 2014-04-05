@@ -1,5 +1,7 @@
 Smaller stuff todo:
 - implement input, output and aux properties to the Graph
+- make it possible to change the operation of a node
+-refactor OpNode to don't need a second constructor.
 - have a way to access operation's enums (for example, in "fractal-trace"
 - check (and test) the representation for complex graphs that embed smaller ones
 (there is a test for a simple embedding already)
