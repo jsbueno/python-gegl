@@ -266,7 +266,6 @@ class TestRectangle(unittest.TestCase):
         r = gegl.Rectangle()
         self.assertIsInstance(r, gegl.Rectangle)
         self.assertIsInstance(r.rect, gegl.gegl._gegl.Rectangle)
-    
 
     def test_explicit_parameters(self):
         r = gegl.Rectangle(10, 10, 30, 30)
@@ -349,7 +348,7 @@ class TestGraphManipulations(unittest.TestCase):
         self.assertEqual(len(graph._children), 2)
         self.assertEqual(last_node.input, graph[0])
 
-    def test_graph_delitem_subgrad(self):
+    def test_graph_delitem_subgraph(self):
         middle = gegl.Graph("over", "over")
         graph = gegl.Graph("color", middle, "crop")
         self.assertEqual(middle[0].input, graph[0])
@@ -359,6 +358,20 @@ class TestGraphManipulations(unittest.TestCase):
         self.assertFalse(middle[0].input)
         self.assertFalse(middle[-1].output)
 
+    def test_graph_insert(self):
+        graph = gegl.Graph("color", "sdl-display")
+        graph.insert(1, "gegl:crop")
+        self.assertEqual(len(graph), 3)
+        self.assertEqual(graph[1].operation, "gegl:crop")
+        self.assertEqual(graph[1].input, graph[0])
+        self.assertEqual(graph[2].input, graph[1])
+
+    def test_graph_insert_subgraph(self):
+        graph = gegl.Graph("color", "sdl-display")
+        middle = gegl.Graph("over", "crop")
+        graph.insert(1, middle)
+        self.assertEqual(middle[0].input, graph[0])
+        self.assertEqual(graph[2].input, middle[1])
 
 class TestGraphConnections(unittest.TestCase):
 

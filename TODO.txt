@@ -1,5 +1,5 @@
 Smaller stuff todo:
-- create a way to insert new nodes in the graph, taking care of the connections
+- create a __setitem__
 - implement input, output and aux properties to the Graph
 - Keep consistency of the ._pads dictionary in opnodes in the _other_ operand
 when connecting  pads. (disconnecting is taking care of that already)
@@ -13,7 +13,7 @@ of the current graph. Currently not displayed
                           to use gegl xml and pass the generated string
                         to pickle)
 - check wether we actually need the outer node in gegl.Graph
-
+- Add a way to include the documentation of gobjects into the Python __doc__s
 
 
 Major stuff todo:
@@ -31,3 +31,4 @@ properties as Python properties
 - input, output and aux in OpNodes now work as Python
 properties that automatically connects Graphs, Nodes or
 _gegl.Nodes assigned to them.
+- created a way to insert new nodes in the graph, taking care of the connections

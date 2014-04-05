@@ -83,7 +83,7 @@ class OpNode(object):
             value = value.buffer
         #Currently there are no ops that use Rectangle as an input parameter 
         #  
-        # TODO: write tests this parameter translation stuff
+        # TODO: write tests for this parameter wrapping stuff
         # TODO: check for other special attribute types
         self._node.set_property(attr, value)
 
@@ -201,7 +201,7 @@ class OpNode(object):
         if self.operation != other.operation:
             return False
         return ({prop: self[prop] for prop in self.properties} == 
-                {prop: self[prop] for prop in other.properties})
+                {prop: other[prop] for prop in other.properties})
 
     def __lshift__(self, other):
         if self.connect_from(other):
@@ -298,6 +298,30 @@ class Graph(object):
         for op in args:
             self.append(op)
 
+    def _add_child(self, op):
+        if isinstance(op, tuple):
+            op, params = op
+            params = dict(params)
+        else:
+            params = {}
+        if isinstance(op, (OpNode, Graph)):
+            node = op
+        elif isinstance(op, _gegl.Node):
+            node = OpNode._from_raw_node(op)
+        else:
+            node = OpNode(op, **params)
+        self._node.add_child(node._node)
+        # attention: creating cyclic reference:
+        # TODO: use weakrefs
+        node._node._parent_graph = self
+        return node
+        if self.auto and self._children:
+            source_node = self
+            # Allows to properly connect to subgraphs inside the current graph
+            while isinstance(source_node, Graph):
+                source_node = source_node._children[-1]
+            node.connect_from(source_node)
+
     def append(self, op):
         """Creates a new OpNode instance and appends it to the graph
 
@@ -314,38 +338,28 @@ class Graph(object):
         with the properties for this operator.
 
         """
-        if isinstance(op, tuple):
-            op, params = op
-            params = dict(params)
-        else:
-            params = {}
-        if isinstance(op, (OpNode, Graph)):
-            node = op
-        elif isinstance(op, _gegl.Node):
-            node = OpNode._from_raw_node(op)
-        else:
-            node = OpNode(op, **params)
-        self._node.add_child(node._node)
-        # attention: creating cyclic reference:
-        # TODO: use weakrefs
-        node._node._parent_graph = self
+        node = self._add_child(op)
         if self.auto and self._children:
             source_node = self
             # Allows to properly connect to subgraphs inside the current graph
             while isinstance(source_node, Graph):
                 source_node = source_node._children[-1]
             node.connect_from(source_node)
-        # Not shure if Gegl's Node.get_children is
-        # ordered by reversed insertion order.
-        # anyway, just the "reversed" part makes it
-        # simpler to have  a Python list holding
-        # a reference to all children rather
-        # than just fecthing the nodes from Gegl
         self._children.append(node)
 
-    def insert(self, index, node):
-        # TODO
-        pass
+    def insert(self, index, op):
+        self[index].disconnect("input")
+        node = self._add_child(op)
+        first_node = last_node = node
+        while isinstance(first_node, Graph):
+            first_node = first_node[0]
+        while isinstance(last_node, Graph):
+            last_node = last_node[-1]
+        self._children.insert(index, node)
+        if index > 0:
+            first_node.input = self[index - 1]
+        if index < len(self) - 1:
+            last_node.output = self[index + 1]
 
     def __delitem__(self, indes):
         pass
