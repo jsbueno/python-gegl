@@ -12,8 +12,6 @@ render to a GEGL Buffer, and pass its pixel
 data directly to a gtk2 drawable.
 """
 
-
-
 G = gegl.gegl._gegl
 SIZE = 640,480
 

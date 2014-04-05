@@ -113,11 +113,28 @@ class TestNodes(unittest.TestCase):
         self.assertEqual(g2[0].input, None)
         self.assertEqual(g1[1].output, [])
         
-    def test_set_attributes(self):
+    def test_set_method(self):
         node = gegl.OpNode("crop")
         node.set(width=640, height=480)
         self.assertEqual(node.width, 640)
         self.assertEqual(node.height, 480)
+
+    def test_set_properties_method(self):
+        # this is actually aliased to ".set"
+        node = gegl.OpNode("crop")
+        node.set_properties(width=640, height=480)
+        self.assertEqual(node.width, 640)
+        self.assertEqual(node.height, 480)
+
+    def test_node_equality(self):
+        n1 = gegl.OpNode("grid")
+        n2 = gegl.OpNode("grid")
+        self.assertIsNot(n1, n2)
+        self.assertIsNot(n1._node, n2._node)
+        self.assertEqual(n1, n2)
+        n1.x = 2
+        n2.x = 5
+        self.assertNotEqual(n1, n2)
 
 
 class TestGraph(unittest.TestCase):
@@ -310,6 +327,38 @@ class TestBuffer(unittest.TestCase):
         self.assertIs(buffer.buffer, lbuffer)
 
 
+class TestGraphManipulations(unittest.TestCase):
+    def test_append_node(self):
+        graph = gegl.Graph("color")
+        self.assertEqual(len(graph), 1)
+        graph.append("over")
+        self.assertEqual(len(graph), 2)
+        # low level check
+        self.assertIs(graph[1]._node.get_producer("input", None), graph[0]._node)
+        # high level check
+        self.assertEqual(graph[0].output[0], graph[1])
+        self.assertIs(graph[0].output[0]._node, graph[1]._node)
+        self.assertEqual(graph[1].input, graph[0])
+        self.assertIs(graph[1].input._node, graph[0]._node)
+
+    def test_graph_delitem(self):
+        graph = gegl.Graph("color", "over", "crop")
+        last_node = graph[-1]
+        del graph[1]
+        self.assertEqual(len(graph), 2)
+        self.assertEqual(len(graph._children), 2)
+        self.assertEqual(last_node.input, graph[0])
+
+    def test_graph_delitem_subgrad(self):
+        middle = gegl.Graph("over", "over")
+        graph = gegl.Graph("color", middle, "crop")
+        self.assertEqual(middle[0].input, graph[0])
+        self.assertEqual(middle[-1].output[0], graph[2])
+        del graph[1]
+        self.assertEqual(graph[1].input, graph[0])
+        self.assertFalse(middle[0].input)
+        self.assertFalse(middle[-1].output)
+
 
 class TestGraphConnections(unittest.TestCase):
 
@@ -318,6 +367,7 @@ class TestGraphConnections(unittest.TestCase):
         g2 = gegl.Graph("grid", "rotate")
         g2.plug_as_aux(g1[1])  # "over"  node
         self.assertIs(g1[1]._node.get_producer("aux", None), g2[-1]._node)
+
 
 
 if __name__ == "__main__":

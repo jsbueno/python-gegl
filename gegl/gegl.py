@@ -20,6 +20,8 @@ class OpNode(object):
     """
     def __init__(self, operation, **kw):
         object.__setattr__(self, "_node",  _gegl.Node())
+        # cyclic - TODO: replace with weakref
+        self._node._wrapper = self
         self.operation = operation
         for key, value in kw.items():
             setattr(self, key, value)
@@ -62,8 +64,6 @@ class OpNode(object):
         if "_" in attr:
             attr = attr.replace("_", "-")
         return self.__getitem__(attr)
-
-
 
     # Make properties available as items, 
     # because a log of them have "-" in their names 
@@ -125,22 +125,40 @@ class OpNode(object):
         self._property_types = properties
 
     def connect_from(self, other, output="output", input="input"):
+        connect_wrapper = None
         self._pads[input] = other
         if isinstance(other, Graph):
             other = other._children[-1]
+
         # Allow working with both wrapped and raw nodes:
-        if hasattr(other, "_node"):
+        if isinstance(other, OpNode):
+            connected_wrapper = other
             other = other._node
+        else:
+            connected_wrapper = other._wrapper
+        # syncronize the references in the other node High
+        # level data structures:
+        if connected_wrapper:
+            connected_wrapper._pads.get(output, []).append(self)
         return self._node.connect_from(input, other, output)
 
     def connect_to(self, other, input="input", output="output"):
+        connect_wrapper = None
         if not output in self._pads:
             self._pads[output] = []
         self._pads[output].append(other)
+
         if isinstance(other, Graph):
             other = other._children[0]
-        if hasattr(other, "_node"):
+        if isinstance(other, OpNode):
+            connect_wrapper = other
             other = other._node
+        elif hasattr(other, "_wrapper"):
+            connect_wrapper = other._wrapper
+        # syncronize the references in the other node High
+        # level data structures:
+        if connect_wrapper:
+            connect_wrapper._pads[input] = self
         return self._node.connect_to(output, other, input)
 
     def _set_pad(self, pad, node):
@@ -176,6 +194,14 @@ class OpNode(object):
     # connecting nodes:
     # NB: these are untested and likely not working. Wait
     # for a proper implementation at the Graph object instead.
+    
+    def __eq__(self, other):
+        # Only compares instances of this class  - 
+        # lower levels should be wrapped.
+        if self.operation != other.operation:
+            return False
+        return ({prop: self[prop] for prop in self.properties} == 
+                {prop: self[prop] for prop in other.properties})
 
     def __lshift__(self, other):
         if self.connect_from(other):
@@ -201,28 +227,36 @@ class OpNode(object):
     keys = lambda s: s.properties
 
     def disconnect(self, pad="input"):
+        # TODO: missing tests
         producer = self._pads.get(pad, None)
         self._pads[pad] = None
         result = self._node.disconnect(pad)
         if isinstance(producer, Graph):
             producer = producer[-1]
-        for i, item in enumerate(producer.output):
-            if item is self or item is self._parent_graph:
-                del producer.output[i]
-                break
+        if pad in ("input", "aux"):
+            for i, item in enumerate(producer.output):
+                if item is self or item is self._parent_graph:
+                    del producer.output[i]
+                    break
+        elif pad == "output" and self.output:
+            for consumer in self.output:
+                if isinstance(consumer, Graph):
+                    consumer = consumer[0]
+                consumer.input = None
         return result
-    
+
 
     def __dir__(self):
-        base =  ['__class__', '__delattr__', '__dict__', '__doc__', 
+        base = sorted(
+                ['__class__', '__delattr__', '__dict__', '__doc__', 
                  '__format__', '__getattr__', '__getattribute__',
                  '__hash__', '__init__', '__lshift__', '__module__', 
                  '__new__', '__reduce__', '__reduce_ex__', '__repr__', 
                  '__rshift__', '__setattr__', '__sizeof__', '__str__',
                  '__subclasshook__', '__weakref__', '_from_raw_node', 
-                 '_node', 'connect_from', 'connect_to', 'keys',
-                 'properties', 'has_pad', 'aux', 'input', 'output', 
-                 'operation','disconnect']
+                 '_node', 'connect_from', 'connect_to', 'has_pad', 'keys',
+                 'properties', 'aux', 'input', 'output', 
+                 'operation','disconnect', 'set'])
         return base + sorted(self.properties)
 
 
@@ -249,8 +283,8 @@ class Graph(object):
             # as another instance of this class.
             self.auto = kw.pop("auto")
         self._node = _gegl.Node()
-        
-        # Anotating this pthon class in the GIR object, in a circular
+
+        # Anotating this python class in the GIR object, in a circular
         # reference.
         # pay attention in object cycles:
         self._node.container = self
@@ -313,6 +347,11 @@ class Graph(object):
         # TODO
         pass
 
+    def __delitem__(self, indes):
+        pass
+
+
+
     def connect_to(self, other, input="input", output="output"):
         # This is the same as connecting the current last node
         # of the graph to another node/graph
@@ -342,6 +381,23 @@ class Graph(object):
 
     def __getitem__(self, index):
         return self._children[index]
+
+    def __delitem__(self, index):
+        morituri = self._children[index]
+        def disconnect_all(node, pads):
+            for pad in pads:
+                if pad in node._pads:
+                    node.disconnect(pad)
+        if isinstance(morituri, Graph):
+            disconnect_all(morituri[0], ("input", "aux"))
+            disconnect_all(morituri[-1], ("output",))
+        else:
+            disconnect_all(morituri, ("input", "aux", "output"))
+        del self._children[index]
+        # Reconnect the remaining nodes:
+        if index > 0:
+            self[index].input = self[index - 1]
+
 
     def __len__(self):
         return len(self._children)

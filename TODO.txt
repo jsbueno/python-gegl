@@ -1,22 +1,19 @@
 Smaller stuff todo:
 - create a way to insert new nodes in the graph, taking care of the connections
+- implement input, output and aux properties to the Graph
+- Keep consistency of the ._pads dictionary in opnodes in the _other_ operand
+when connecting  pads. (disconnecting is taking care of that already)
 - have a way to access operation's enums (for example, in "fractal-trace"
-- simplify the gegl-node object creation in gegl.Graph
-   (do we "need" the outer node?)
 - check (and test) the representation for complex graphs that embed smaller ones
 (there is a test for a simple embedding already)
 - Make the repr display other Graphs connected to the [input pad of the] first node 
 of the current graph. Currently not displayed
-- implement input, output and aux properties to the Graph
-- Keep consistency of the ._pads dictionary in opnodes in the _other_ operand
-when connecting  pads. (disconnecting is taking care of that already)
-- Make Graphs pickeable (python serializable)
 
-wrap GEGL REctangles
-wrap Gegl Buffers
-   # after getting a work-around to get buffers
-   # instatiated at all - right now _gegl.Buffer call is broken
-   # as it does not accept any parameters.
+- Make Graphs pickeable (python serializable - probably customize this
+                          to use gegl xml and pass the generated string
+                        to pickle)
+- check wether we actually need the outer node in gegl.Graph
+
 
 
 Major stuff todo:
