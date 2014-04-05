@@ -373,6 +373,13 @@ class TestGraphManipulations(unittest.TestCase):
         self.assertEqual(middle[0].input, graph[0])
         self.assertEqual(graph[2].input, middle[1])
 
+    def test_graf_setitem(self):
+        graph = gegl.Graph("color", "nop", "sdl-display")
+        graph[1] = "gegl:crop"
+        self.assertEqual(graph[1].operation, "gegl:crop")
+        self.assertEqual(graph[1].input, graph[0])
+        self.assertEqual(graph[2].input, graph[1])
+
 class TestGraphConnections(unittest.TestCase):
 
     def test_graph_connects_as_aux(self):

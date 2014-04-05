@@ -361,10 +361,6 @@ class Graph(object):
         if index < len(self) - 1:
             last_node.output = self[index + 1]
 
-    def __delitem__(self, indes):
-        pass
-
-
 
     def connect_to(self, other, input="input", output="output"):
         # This is the same as connecting the current last node
@@ -395,6 +391,10 @@ class Graph(object):
 
     def __getitem__(self, index):
         return self._children[index]
+    
+    def __setitem__(self, index, op):
+        del self[index]
+        self.insert(index, op)
 
     def __delitem__(self, index):
         morituri = self._children[index]
