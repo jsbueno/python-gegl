@@ -329,6 +329,31 @@ class TestBuffer(unittest.TestCase):
         buffer = gegl.Buffer(lbuffer)
         self.assertIs(buffer.buffer, lbuffer)
 
+class TestPath(unittest.TestCase):
+    def test_instantiate(self):
+        path = gegl.Path()
+        self.assertIsInstance(path._path, gegl.gegl._gegl.Path)
+    
+    def test_instantiate_from_raw_path(self):
+        rpath = gegl.gegl._gegl.Path()
+        path = gegl.Path(rpath)
+        self.assertIs(path._path, rpath)
+
+    def test_instantiate_from_string(self):
+        path = gegl.Path("M 0 0 L 100 0")
+        self.assertIsInstance(path._path, gegl.gegl._gegl.Path)
+        self.assertEqual(path._path.get_n_nodes(), 2)
+
+    def test_instantiate_from_path_node_list(self):
+        path = gegl.Path("M 0 0", "L 100 0")
+        self.assertEqual(path._path.get_n_nodes(), 2)
+
+    def test_path_attributed_to_node(self):
+        path = gegl.Path("M 0 0 L 100 0")
+        node= gegl.OpNode("vector-stroke")
+        node.d = path
+        self.assertIs(node.d._path, path._path)
+
 
 class TestGraphManipulations(unittest.TestCase):
     def test_append_node(self):

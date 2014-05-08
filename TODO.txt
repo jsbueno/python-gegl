@@ -1,12 +1,12 @@
 Smaller stuff todo:
 - implement input, output and aux properties to the Graph
 - make it possible to change the operation of a node
--refactor OpNode to don't need a second constructor.
-- have a way to access operation's enums (for example, in "fractal-trace"
+- refactor OpNode to don't need a second constructor.
+- have a way to access operation's enums (for example, in "fractal-trace")
 - check (and test) the representation for complex graphs that embed smaller ones
 (there is a test for a simple embedding already)
 - Make the repr display other Graphs connected to the [input pad of the] first node 
-of the current graph. Currently not displayed
+of the current graph. Currently not displayed (maybe - check if this makes sense)
 
 - Make Graphs pickeable (python serializable - probably customize this
                           to use gegl xml and pass the generated string
@@ -34,3 +34,4 @@ _gegl.Nodes assigned to them.
 when connecting  pads.
 - created a way to insert new nodes in the graph, taking care of the connections
 - created a __setitem__ for gegl.Graph
+- Basic Wrapping fot GEGL's Vector class

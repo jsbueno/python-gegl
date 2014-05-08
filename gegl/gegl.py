@@ -3,6 +3,7 @@
 
 import sys
 from gi.repository import Gegl as _gegl
+from .path import Path
 
 DEFAULT_OP_NAMESPACE = "gegl"
 
@@ -81,6 +82,10 @@ class OpNode(object):
             if not isinstance(value, Buffer):
                 value = Buffer(value)
             value = value.buffer
+        elif self._property_types[attr][0] == 'GType GeglPath':
+            if not isinstance(value, Path):
+                value = Path(value)
+            value = value._path
         #Currently there are no ops that use Rectangle as an input parameter 
         #  
         # TODO: write tests for this parameter wrapping stuff
@@ -96,6 +101,8 @@ class OpNode(object):
             res = Buffer(res)
         elif isinstance(res, _gegl.Rectangle):
             res = Rectangle(res)
+        elif isinstance(res, _gegl.Path):
+            res = Path(res)
         return res
 
     # GEGL-op properties != Python properties
@@ -547,6 +554,21 @@ class Buffer(object):
             format = self.format
         return self.buffer.get(self.buffer.get_extent(),
                                scale, format, _gegl.AUTO_ROWSTRIDE)
+
+    def set(self, rect=None, format=None, src=""):
+        if rect is None:
+            rect = self.get_extent()
+        elif not isinstance(rect, Rectangle):
+            rect = Rectangle(rect)
+        if format is None:
+            format = self.format
+        # retrieve the lowlevel _gegl.Rectangle:
+        rect = rect.rect
+        # this call is seen in introspection heavily
+        # modified from what is described in the C API.
+        # in particular, there is no access to the scale or
+        # row-stride parameters.
+        self.buffer.set (rect, format, src)
 
     def get_extent(self):
         return Rectangle(self.buffer.get_extent())
