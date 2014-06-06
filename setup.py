@@ -34,7 +34,7 @@ setup(name = 'python-gegl',
       description = "Wrappers to simplify GEGL usage with python",
       packages = ['gegl'],
       long_description = long_description,
-      download_url = 'https://github.com/jsbueno/python-gegl/archive/v0.2.tar.gz',
+      download_url = 'https://github.com/jsbueno/python-gegl/releases/download/v0.2/v0.2.tar.gz',
       classifiers = [
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',
