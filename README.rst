@@ -5,7 +5,7 @@ GEGL
 Python lithweight wrapper for using GEGL - Generic Graphics Library
 (http://www.gegl.org)
 
-Currently working for Python 2 and Python3
+Currently working for Python2 and Python3
 
 ***********************
 Justificative
@@ -43,15 +43,15 @@ OpNode('gegl:png-load')
 >>> x()
 >>>
 
-
 ********************
 Prerequisites
 ********************
     You will need a working GEGL with Gobject introspection installed,
-    and pygobject
+    and pygobject. This comes out of the box with proper install of GEGL
+    and gobject introspection: works in Fedora 20 (late 2013) and possibly
+    other recent distributions as of 2014.
+    
 
-    (Unfortunatelly for now PyGOBject does not auto-install with distutils
-    on real-life systems, so auto-detecting and installing it in the
-    setup.py can't be achieved easily)
+
 
    

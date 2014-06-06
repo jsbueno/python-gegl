@@ -11,7 +11,7 @@ if "install" in sys.argv:
     except ImportError:
         import sys
         sys.stderr.write("""\
-            gobject introspection enabled Gegl not installed on this system -
+            gobject introspection enabled GEGL not installed on this system -
             this package won't work as is.
 
             Ensure you have installed:
@@ -20,22 +20,21 @@ if "install" in sys.argv:
 
                 Package not installed!
 
-            """)
+            \n""")
         sys.exit(1)
 
 with open('README.rst') as file:
     long_description = file.read()
 
 setup(name = 'python-gegl',
-      version = '0.1',
+      version = '0.2',
       author = 'João S. O. Bueno',
       author_email = 'gwidion@gmail.com',
       url = 'https://github.com/jsbueno/python-gegl',
       description = "Wrappers to simplify GEGL usage with python",
-      package_dir = {'': 'gegl'},
-      packages = [''],
+      packages = ['gegl'],
       long_description = long_description,
-      download_url = 'https://github.com/jsbueno/python-gegl/archive/v0.1.tar.gz',
+      download_url = 'https://github.com/jsbueno/python-gegl/archive/v0.2.tar.gz',
       classifiers = [
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',

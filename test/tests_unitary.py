@@ -191,6 +191,7 @@ class TestGraph(unittest.TestCase):
         </gegl>
         """.split()
         graph = gegl.Graph("png-load", "invert", "png-save")
+        graph[2].compression = 1
         self.assertEqual(graph.to_xml().split(), expected)
 
     def test_recursive_representation(self):
