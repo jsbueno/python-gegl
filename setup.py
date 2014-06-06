@@ -23,7 +23,7 @@ if "install" in sys.argv:
             \n""")
         sys.exit(1)
 
-with open('README.rst') as file:
+with open('README') as file:
     long_description = file.read()
 
 setup(name = 'python-gegl',
