@@ -27,7 +27,7 @@ with open('README') as file:
     long_description = file.read()
 
 setup(name = 'python-gegl',
-      version = '0.2',
+      version = '0.2.1',
       author = 'João S. O. Bueno',
       author_email = 'gwidion@gmail.com',
       url = 'https://github.com/jsbueno/python-gegl',
