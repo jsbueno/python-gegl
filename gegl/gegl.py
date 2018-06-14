@@ -2,6 +2,8 @@
 # Author: João S. O. Bueno
 
 import sys
+import gi
+gi.require_version("Gegl", "0.4")
 from gi.repository import Gegl as _gegl
 from .path import Path
 
